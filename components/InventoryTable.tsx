@@ -51,6 +51,26 @@ export default function InventoryTable({ items }: InventoryTableProps) {
     return locationColorPalette[locationIndex % locationColorPalette.length] || { bg: 'bg-gray-50', border: 'border-gray-200', header: 'bg-gray-100' };
   };
 
+  // Helper function to extract shelf number and row for natural sorting
+  // Handles formats like "Shelf 1 Row A", "Shelf 2", "Shelf 1 Row B", etc.
+  const getShelfSortKey = (shelf: string | undefined): string => {
+    if (!shelf) return 'zzz-no-shelf'; // Items without shelf go last
+    
+    const shelfLower = shelf.toLowerCase();
+    
+    // Extract shelf number (e.g., "1" from "Shelf 1 Row A")
+    const shelfMatch = shelfLower.match(/shelf\s*(\d+)/);
+    const shelfNum = shelfMatch ? parseInt(shelfMatch[1], 10) : 9999;
+    
+    // Extract row letter (e.g., "a" from "Shelf 1 Row A")
+    const rowMatch = shelfLower.match(/row\s*([a-z])/);
+    const rowLetter = rowMatch ? rowMatch[1] : 'zzz';
+    
+    // Create sort key: shelf number (padded) + row letter
+    // This ensures: Shelf 1 Row A < Shelf 1 Row B < Shelf 2 < Shelf 2 Row A
+    return `${String(shelfNum).padStart(4, '0')}-${rowLetter}`;
+  };
+
   const sortedAndFilteredItems = useMemo(() => {
     let filtered = items;
 
@@ -77,11 +97,23 @@ export default function InventoryTable({ items }: InventoryTableProps) {
 
     // Apply sorting
     filtered = [...filtered].sort((a, b) => {
-      // First sort by location, then by the selected field
-      if (a.location !== b.location) {
-        return a.location.localeCompare(b.location);
+      // First sort by location (using predefined order)
+      const locationOrderA = getLocationSortOrder(a.location);
+      const locationOrderB = getLocationSortOrder(b.location);
+      if (locationOrderA !== locationOrderB) {
+        return locationOrderA - locationOrderB;
       }
       
+      // Then sort by shelf (natural order: Shelf 1 Row A, Shelf 1 Row B, Shelf 2, etc.)
+      if (a.location === b.location) {
+        const shelfKeyA = getShelfSortKey(a.shelf);
+        const shelfKeyB = getShelfSortKey(b.shelf);
+        if (shelfKeyA !== shelfKeyB) {
+          return shelfKeyA.localeCompare(shelfKeyB);
+        }
+      }
+      
+      // Finally sort by the selected field
       const aVal = a[sortField];
       const bVal = b[sortField];
       
@@ -115,23 +147,50 @@ export default function InventoryTable({ items }: InventoryTableProps) {
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
-  // Group items by location for rendering
+  // Group items by location, then by shelf/subsection
   const groupedItems = useMemo(() => {
-    const groups: { location: string; items: InventoryItem[] }[] = [];
-    const locationMap = new Map<string, InventoryItem[]>();
+    // First group by location
+    const locationGroups = new Map<string, Map<string | undefined, InventoryItem[]>>();
 
     sortedAndFilteredItems.forEach(item => {
-      if (!locationMap.has(item.location)) {
-        locationMap.set(item.location, []);
+      if (!locationGroups.has(item.location)) {
+        locationGroups.set(item.location, new Map());
       }
-      locationMap.get(item.location)!.push(item);
+      const shelfMap = locationGroups.get(item.location)!;
+      
+      const shelfKey = item.shelf || undefined;
+      if (!shelfMap.has(shelfKey)) {
+        shelfMap.set(shelfKey, []);
+      }
+      shelfMap.get(shelfKey)!.push(item);
     });
 
-    locationMap.forEach((items, location) => {
-      groups.push({ location, items });
+    // Convert to array structure: location -> shelves -> items
+    const groups: Array<{
+      location: string;
+      shelves: Array<{ shelf: string | undefined; items: InventoryItem[] }>;
+    }> = [];
+
+    locationGroups.forEach((shelfMap, location) => {
+      const shelves: Array<{ shelf: string | undefined; items: InventoryItem[] }> = [];
+      
+      shelfMap.forEach((items, shelf) => {
+        // Sort items within each shelf by item name
+        items.sort((a, b) => a.itemName.localeCompare(b.itemName));
+        shelves.push({ shelf, items });
+      });
+      
+      // Sort shelves by natural order (Shelf 1 Row A, Shelf 1 Row B, Shelf 2, etc.)
+      shelves.sort((a, b) => {
+        const keyA = getShelfSortKey(a.shelf);
+        const keyB = getShelfSortKey(b.shelf);
+        return keyA.localeCompare(keyB);
+      });
+      
+      groups.push({ location, shelves });
     });
 
-    // Sort by the standard location order
+    // Sort locations by the standard location order
     return groups.sort((a, b) => {
       const orderA = getLocationSortOrder(a.location);
       const orderB = getLocationSortOrder(b.location);
@@ -230,12 +289,17 @@ export default function InventoryTable({ items }: InventoryTableProps) {
               >
                 Volatility
               </th>
+              <th 
+                className="px-2 py-1.5 text-left text-xs font-semibold text-gray-800 font-sans"
+              >
+                Order
+              </th>
             </tr>
           </thead>
           <tbody>
             {sortedAndFilteredItems.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-gray-500 border border-gray-400 font-sans">
+                <td colSpan={9} className="px-4 py-6 text-center text-gray-500 border border-gray-400 font-sans">
                   No items found
                 </td>
               </tr>
@@ -244,17 +308,31 @@ export default function InventoryTable({ items }: InventoryTableProps) {
                 const locationColors = getLocationColor(group.location);
                 return (
                   <React.Fragment key={group.location}>
-                    {/* Location Header Row - Google Sheets style */}
+                    {/* Location Header Row - Google Sheets style (bold) */}
                     <tr className={`${locationColors.header} border-t-2 border-b border-gray-400`}>
                       <td 
-                        colSpan={8} 
+                        colSpan={9} 
                         className="px-2 py-1.5 font-bold text-xs text-gray-900 border-r border-gray-400 font-sans"
                       >
                         {group.location}
                       </td>
                     </tr>
-                    {/* Items in this location */}
-                    {group.items.map((item, itemIndex) => {
+                    {/* Shelves within this location */}
+                    {group.shelves.map((shelfGroup, shelfIndex) => (
+                      <React.Fragment key={`${group.location}-${shelfGroup.shelf || 'no-shelf'}-${shelfIndex}`}>
+                        {/* Shelf Header Row - Google Sheets style (normal text, not bold) */}
+                        {shelfGroup.shelf && (
+                          <tr className={`${locationColors.bg} border-b border-gray-300`}>
+                            <td 
+                              colSpan={9} 
+                              className="px-2 py-1.5 text-xs text-gray-700 border-r border-gray-400 font-sans"
+                            >
+                              {shelfGroup.shelf}
+                            </td>
+                          </tr>
+                        )}
+                        {/* Items in this shelf */}
+                        {shelfGroup.items.map((item, itemIndex) => {
                       return (
                         <tr
                           key={`${item.location}-${itemIndex}`}
@@ -320,9 +398,30 @@ export default function InventoryTable({ items }: InventoryTableProps) {
                               <span className="text-gray-400 text-xs">-</span>
                             )}
                           </td>
+                          <td 
+                            className="px-2 py-1.5 text-xs border-r border-gray-400 font-sans"
+                          >
+                            {item.orderLink ? (
+                              <a
+                                href={item.orderLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 text-xs font-semibold text-white bg-blue-600 rounded hover:bg-blue-700 inline-flex items-center gap-1"
+                              >
+                                Order More
+                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                            ) : (
+                              <span className="text-gray-400 text-xs">-</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
+                      </React.Fragment>
+                    ))}
                   </React.Fragment>
                 );
               })

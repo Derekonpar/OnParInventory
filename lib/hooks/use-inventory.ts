@@ -10,7 +10,11 @@ interface InventoryResponse {
 const fetcher = async (url: string): Promise<InventoryResponse> => {
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error('Failed to fetch inventory data');
+    const errorData = await res.json().catch(() => ({}));
+    const error = new Error(errorData.hint || errorData.details || 'Failed to fetch inventory data');
+    (error as any).hint = errorData.hint;
+    (error as any).details = errorData.details;
+    throw error;
   }
   return res.json();
 };

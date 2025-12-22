@@ -6,9 +6,22 @@ The user has a Google Sheet-based master inventory system with the following str
 - **Item ID Column**: Contains location information (area, bolded location name, regular font for shelf details like "Shelf 1 Row B")
 - **Color coding**: Each location is filled with different colors for visual distinction
 - **Item Name Column**: Name of the inventory item
-- **Stock Column**: Current counted amount
+- **Stock Column**: Current counted amount (from table - "Total" column)
 - **Par Column**: Minimum threshold before reordering
 - **Order Amount Column**: Calculated as (Par - Stock) to determine reorder quantity
+
+### Updated Sheet Structure (as of latest update):
+The sheet now includes weekly inventory tracking with usage calculations:
+- **Table columns**: Location, Product, Total, Par Level, Quantity to Order, Link to Order More
+- **Historical tracking columns** (repeating pattern for each week):
+  - `Inv MM/DD` - Inventory count for that date
+  - `Ordered` - Amount ordered that week
+  - `MM/DD-MM/DD Usage` - Calculated usage: (previous count + ordered) - current count
+- **Pattern**: "Inv 12/08", "Ordered", "Inv 12/15", "12/8-12/15 Usage", "Ordered", "Inv 12/22", "12/15-12/22 Usage", "Ordered"
+- **First date** (12/08) has no usage column (it's the baseline)
+- **Each Monday**: User adds new date column and usage column for previous week
+- **Below Par Detection**: Uses most recent date column (e.g., 12/22) vs Par Level column
+- **Volatility Calculation**: Uses running standard deviation of usage values (not stock changes)
 
 **Goal**: Create a sophisticated, professional inventory dashboard hosted on Vercel that:
 - Displays all inventory information in a beautiful, sensical way
@@ -306,6 +319,36 @@ The user has a Google Sheet-based master inventory system with the following str
 - ✅ Volatility indicators in inventory table
 - ✅ Volatility filter in inventory table
 - ✅ High Volatility KPI card on main dashboard
+
+### Updated Sheet Structure (Latest - Weekly Tracking with Usage)
+
+**Column Pattern (repeating for each week):**
+1. `Inv MM/DD` - Inventory count for that Monday date
+2. `Ordered` - Amount ordered that week
+3. `MM/DD-MM/DD Usage` - Calculated usage: (previous count + ordered) - current count
+4. `Ordered` - Amount ordered for next week (if applicable)
+
+**Example Structure:**
+- `Inv 12/08` (first date - no usage column)
+- `Ordered`
+- `Inv 12/15`
+- `12/8-12/15 Usage`
+- `Ordered`
+- `Inv 12/22`
+- `12/15-12/22 Usage`
+- `Ordered`
+
+**Key Changes:**
+- **Volatility Calculation**: Now uses running standard deviation of **usage values** (not stock changes)
+- **Below Par Detection**: Uses most recent date column (e.g., 12/22) vs Par Level column
+- **Usage Formula**: (Previous Count + Ordered) - Current Count = Usage
+- **Weekly Updates**: Every Monday, user adds new date column and usage column for previous week
+
+**Implementation Notes:**
+- Parser detects usage columns by pattern: "MM/DD-MM/DD Usage"
+- Parser detects "Ordered" columns and associates them with preceding date columns
+- Volatility metrics now track `historicalUsage[]` array for running standard deviation
+- Most recent date column automatically used for current stock and below par detection
 
 ## NEW FEATURE: Historical Inventory Tracking & Volatility Analysis
 

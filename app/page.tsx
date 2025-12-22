@@ -24,11 +24,32 @@ export default function Home() {
   }
 
   if (isError) {
+    // Try to get error details from the error object
+    const errorDetails = isError instanceof Error ? isError.message : 
+                        (typeof isError === 'object' && isError !== null && 'hint' in isError) 
+                          ? String((isError as any).hint) 
+                          : 'Failed to fetch inventory data';
+    
     return (
       <div className="p-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-red-900 mb-2">Error Loading Data</h2>
-          <p className="text-red-700 mb-4">Failed to fetch inventory data. Please check your connection and try again.</p>
+          <p className="text-red-700 mb-4">{errorDetails}</p>
+          {errorDetails.includes('environment variable') && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-yellow-800 text-sm font-semibold mb-2">Setup Required:</p>
+              <p className="text-yellow-700 text-sm">
+                Add the following environment variables in your Vercel project settings:
+              </p>
+              <ul className="list-disc list-inside text-yellow-700 text-sm mt-2 space-y-1">
+                <li><code className="bg-yellow-100 px-1 rounded">GOOGLE_SHEET_ID</code></li>
+                <li><code className="bg-yellow-100 px-1 rounded">GOOGLE_SERVICE_ACCOUNT_JSON</code></li>
+              </ul>
+              <p className="text-yellow-700 text-sm mt-2">
+                Go to: Vercel Dashboard → Your Project → Settings → Environment Variables
+              </p>
+            </div>
+          )}
           <button
             onClick={() => refresh()}
             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
@@ -71,6 +92,15 @@ export default function Home() {
           Refresh
         </button>
       </div>
+
+      {/* Info about data source */}
+      {stats.stockSourceDate && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <span className="font-semibold">Stock Source:</span> Using <span className="font-mono font-semibold">{stats.stockSourceDate}</span> column for current stock and below par calculations
+          </p>
+        </div>
+      )}
 
       {/* Critical KPIs - Industry Standard Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
