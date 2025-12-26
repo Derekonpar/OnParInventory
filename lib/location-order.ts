@@ -12,8 +12,7 @@ export const LOCATION_ORDER = [
   'Front Desk',
   'Mop room by dish',
   'Golf',
-  'Hallway Storage by ADA bathrooms',
-  'Kitchen Chemical Room'
+  'Hallway Storage by ADA bathrooms'
 ];
 
 /**

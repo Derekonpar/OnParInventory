@@ -248,8 +248,7 @@ export function parseSheetData(rawData: string[][]): InventoryItem[] {
     'Front Desk',
     'Mop room by dish',
     'Golf',
-    'Hallway Storage by ADA bathrooms',
-    'Kitchen Chemical Room'
+    'Hallway Storage by ADA bathrooms'
   ];
 
   const items: InventoryItem[] = [];
