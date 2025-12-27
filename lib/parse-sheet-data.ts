@@ -238,18 +238,40 @@ export function parseSheetData(rawData: string[][]): InventoryItem[] {
   }
 
   // Known main location headers (bolded rows that separate sections)
+  // Each location is separated by color in the Google Sheet
   const mainLocations = [
     'Dock Trailer',
     'Event Shelves',
     'Dock Mop Sink',
     'Karaoke',
     'Basement',
-    'Unlocked Room Basement',
+    'Unlocked basement room',
     'Front Desk',
-    'Mop room by dish',
+    'Mop closet by dish',
+    'Main wall cooler',
     'Golf',
-    'Hallway Storage by ADA bathrooms'
+    'Hallway Storage by ADA bathrooms',
+    'Kitchen Chemical Room',
+    'Mop room by mens',
+    'Office'
   ];
+
+  // Helper function to match location exactly (case-insensitive, whitespace-normalized)
+  // Returns the matched location name from mainLocations, or null if no match
+  // Only exact matches are allowed - "Golf" will NOT match "Golf Clubs"
+  function matchMainLocation(locationValue: string): string | null {
+    if (!locationValue) return null;
+    // Normalize: lowercase, trim, and collapse multiple spaces to single space
+    const normalized = locationValue.toLowerCase().trim().replace(/\s+/g, ' ');
+    // Only exact matches
+    for (const loc of mainLocations) {
+      const locNormalized = loc.toLowerCase().trim().replace(/\s+/g, ' ');
+      if (normalized === locNormalized) {
+        return loc; // Return the canonical name from mainLocations
+      }
+    }
+    return null;
+  }
 
   const items: InventoryItem[] = [];
   let currentMainLocation = '';
@@ -271,24 +293,24 @@ export function parseSheetData(rawData: string[][]): InventoryItem[] {
     const product = String(row[finalProductIndex] || '').trim();
     
     // Check if this is a main location header (has location but no product, and matches known locations)
-    const isMainLocationHeader = locationValue && 
-                                 !product && 
-                                 mainLocations.some(loc => 
-                                   locationValue.toLowerCase() === loc.toLowerCase() ||
-                                   locationValue.toLowerCase().includes(loc.toLowerCase())
-                                 );
+    const matchedLocation = matchMainLocation(locationValue);
+    const isMainLocationHeader = locationValue && !product && matchedLocation !== null;
 
     if (isMainLocationHeader) {
-      // This is a main location header - update current main location
-      currentMainLocation = locationValue;
+      // This is a main location header - update current main location with the canonical name
+      currentMainLocation = matchedLocation;
       currentSubsection = ''; // Reset subsection when we hit a new main location
+      console.log(`parseSheetData: Found main location header: "${matchedLocation}" (from "${locationValue}")`);
       continue; // Skip this row, it's just a header
     }
 
     // Check if this is a subsection header (has location but no product, and we have a main location)
+    // BUT make sure it's not actually a main location that we missed
+    const matchedLocationCheck = matchMainLocation(locationValue);
     const isSubsectionHeader = locationValue && 
                                !product && 
                                currentMainLocation &&
+                               matchedLocationCheck === null && // NOT a main location
                                locationValue.toLowerCase() !== currentMainLocation.toLowerCase();
 
     if (isSubsectionHeader) {
@@ -306,20 +328,36 @@ export function parseSheetData(rawData: string[][]): InventoryItem[] {
     let finalLocation = currentMainLocation;
     let shelf: string | undefined = undefined;
 
-    // If we have a location value in this row, it might be a subsection
+    // If we have a location value in this row, check if it's a main location or subsection
     if (locationValue) {
+      const matchedLocation = matchMainLocation(locationValue);
+      
+      // If it matches a main location exactly, it's a new main location (should have been caught above, but handle edge case)
+      if (matchedLocation && matchedLocation !== currentMainLocation) {
+        // This shouldn't happen if parsing is correct, but update if it does
+        currentMainLocation = matchedLocation;
+        finalLocation = matchedLocation;
+        currentSubsection = '';
+      }
       // If it matches the current main location, use it
-      if (locationValue.toLowerCase() === currentMainLocation.toLowerCase()) {
-        finalLocation = locationValue;
+      else if (matchedLocation === currentMainLocation) {
+        finalLocation = currentMainLocation;
       } 
-      // If it's different from main location but we have a main location, it's a subsection
+      // If it's different from main location but we have a main location, it's a subsection/shelf
       else if (currentMainLocation && locationValue.toLowerCase() !== currentMainLocation.toLowerCase()) {
         shelf = locationValue;
         finalLocation = currentMainLocation;
       }
-      // If we don't have a main location yet, use this as the location
+      // If we don't have a main location yet, try to match it
       else if (!currentMainLocation) {
-        finalLocation = locationValue;
+        const matched = matchMainLocation(locationValue);
+        if (matched) {
+          finalLocation = matched;
+          currentMainLocation = matched;
+        } else {
+          // Unknown location - skip this row to avoid misassignment
+          continue;
+        }
       }
     }
 

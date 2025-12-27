@@ -110,7 +110,7 @@ export default function InventoryTable({ items }: InventoryTableProps) {
         const shelfKeyB = getShelfSortKey(b.shelf);
         if (shelfKeyA !== shelfKeyB) {
           return shelfKeyA.localeCompare(shelfKeyB);
-        }
+      }
       }
       
       // Finally sort by the selected field

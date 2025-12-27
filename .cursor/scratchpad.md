@@ -3,12 +3,37 @@
 ## Background and Motivation
 
 The user has a Google Sheet-based master inventory system with the following structure:
-- **Item ID Column**: Contains location information (area, bolded location name, regular font for shelf details like "Shelf 1 Row B")
-- **Color coding**: Each location is filled with different colors for visual distinction
-- **Item Name Column**: Name of the inventory item
-- **Stock Column**: Current counted amount (from table - "Total" column)
-- **Par Column**: Minimum threshold before reordering
-- **Order Amount Column**: Calculated as (Par - Stock) to determine reorder quantity
+- **Location Column**: Contains location information (main location in bold, subsections in regular font)
+- **Color coding**: Each main location is separated by different background colors for visual distinction
+- **Product Column**: Name of the inventory item
+- **Total Column**: Current counted amount
+- **Par Level Column**: Minimum threshold before reordering
+- **Quantity to Order Column**: Manual input (not used for below par calculation)
+- **Link to Order More Column**: URL for ordering each item
+
+### Complete Location Structure (Top to Bottom Order):
+1. **Dock Trailer**
+   - Subsections: Shelf 1 Row A, B, C, D, ... Shelf 5, Pallet 1, Pallet 2, Pallet 3, Trailer Wall
+2. **Event Shelves**
+   - Subsections: Shelf 1 Row A-E (for 2 shelves), Wall
+3. **Dock Mop Sink** (no subsections)
+4. **Karaoke**
+   - Subsection: Front Cabinet
+5. **Basement**
+   - Subsections: Locked Room (includes Shelf 1 Row A-E for 2 shelves), Wall
+6. **Unlocked basement room** (no subsections)
+7. **Front Desk**
+   - Subsections: Open Cabinet 1, Cabinet 1-3, Open Cabinet 2, Cabinet 6, Bracelet Cubbies
+8. **Mop closet by dish** (no subsections)
+9. **Main wall cooler**
+   - Subsections: Above Cooler, Wall
+10. **Golf** (no subsections)
+11. **Hallway Storage by ADA bathrooms** (no subsections)
+12. **Kitchen Chemical Room**
+    - Subsection: Cabinet
+13. **Mop room by mens** (no subsections)
+14. **Office**
+    - Subsections: Metal File Cabinet, Manager Drawer, Upstairs
 
 ### Updated Sheet Structure (as of latest update):
 The sheet now includes weekly inventory tracking with usage calculations:
@@ -307,6 +332,8 @@ The sheet now includes weekly inventory tracking with usage calculations:
 - Dashboard is fully functional and displaying data
 - All core features implemented
 - ✅ Historical inventory tracking and volatility analysis COMPLETE
+- ✅ Location structure updated with complete hierarchy (13 main locations with subsections)
+- ✅ Location parsing improved with strict exact matching (prevents misassignment)
 - Ready for testing and refinement
 
 **Completed Features:**
@@ -319,6 +346,9 @@ The sheet now includes weekly inventory tracking with usage calculations:
 - ✅ Volatility indicators in inventory table
 - ✅ Volatility filter in inventory table
 - ✅ High Volatility KPI card on main dashboard
+- ✅ Location parsing with strict exact matching (prevents "Golf" from matching "Golf Clubs")
+- ✅ Complete location hierarchy (13 main locations with subsections documented)
+- ✅ "Mop closet by dish" properly separated from "Front Desk"
 
 ### Updated Sheet Structure (Latest - Weekly Tracking with Usage)
 

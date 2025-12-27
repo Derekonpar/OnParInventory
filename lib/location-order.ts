@@ -8,11 +8,15 @@ export const LOCATION_ORDER = [
   'Dock Mop Sink',
   'Karaoke',
   'Basement',
-  'Unlocked Room Basement',
+  'Unlocked basement room',
   'Front Desk',
-  'Mop room by dish',
+  'Mop closet by dish',
+  'Main wall cooler',
   'Golf',
-  'Hallway Storage by ADA bathrooms'
+  'Hallway Storage by ADA bathrooms',
+  'Kitchen Chemical Room',
+  'Mop room by mens',
+  'Office'
 ];
 
 /**

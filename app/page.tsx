@@ -72,7 +72,6 @@ export default function Home() {
   // Calculate critical metrics
   const criticalItems = items.filter(item => item.isBelowPar);
   const totalOrderValue = items.reduce((sum, item) => sum + (item.orderAmount * (item.par > 0 ? item.par : 1)), 0);
-  const inventoryTurnover = stats.totalItems > 0 ? (stats.totalStock / stats.totalItems).toFixed(1) : '0';
 
   return (
     <div className="p-6 lg:p-8">
@@ -103,7 +102,7 @@ export default function Home() {
       )}
 
       {/* Critical KPIs - Industry Standard Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KPICard
           title="Items Below Par"
           value={stats.itemsBelowPar}
@@ -138,11 +137,6 @@ export default function Home() {
           title="Total Items"
           value={stats.totalItems}
           subtitle={`${stats.locations.length} locations`}
-        />
-        <KPICard
-          title="Avg Stock per Item"
-          value={inventoryTurnover}
-          subtitle="Inventory efficiency"
         />
       </div>
 
