@@ -62,14 +62,11 @@ export default function ChartsSection({ stats, items }: ChartsSectionProps) {
                 data={locationData}
                 cx="50%"
                 cy="40%"
-                labelLine={(entry: any) => {
-                  // Only show label line if the label will be shown
-                  const percent = entry.percent * 100;
-                  return percent >= 2; // Return boolean: true to show, false to hide
-                }}
+                labelLine={true}
                 label={(entry: any) => {
                   const percent = entry.percent * 100;
                   // Only show percentage if it's significant enough to avoid clutter
+                  // When label returns empty string, labelLine is automatically hidden
                   if (percent < 2) return ''; // Hide very small percentages
                   // Format: show 1 decimal for small percentages, whole number for larger
                   return percent < 5 ? `${percent.toFixed(1)}%` : `${percent.toFixed(0)}%`;
