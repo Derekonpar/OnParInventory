@@ -612,10 +612,27 @@ function parseInventoryDate(header: string): string | null {
  * Compare two date strings in MM/DD format
  * Returns: -1 if date1 < date2, 0 if equal, 1 if date1 > date2
  */
+/**
+ * Compare two date strings in MM/DD format, handling year rollover
+ * Assumes dates within 6 months are in the same year
+ * If dates span year boundary (Dec -> Jan), treats Jan as next year (newer)
+ */
 function compareDates(date1: string, date2: string): number {
   const [month1, day1] = date1.split('/').map(Number);
   const [month2, day2] = date2.split('/').map(Number);
   
+  // Handle year rollover: if one date is in Dec (12) and other is in Jan-Mar (1-3),
+  // assume the Jan-Mar date is in the next year (newer)
+  if (month1 >= 12 && month2 <= 3) {
+    // date1 is Dec, date2 is Jan-Mar -> date2 is newer (next year)
+    return -1;
+  }
+  if (month1 <= 3 && month2 >= 12) {
+    // date1 is Jan-Mar, date2 is Dec -> date1 is newer (next year)
+    return 1;
+  }
+  
+  // Normal comparison within same year
   if (month1 !== month2) {
     return month1 - month2;
   }

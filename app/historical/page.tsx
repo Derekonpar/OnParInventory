@@ -34,10 +34,23 @@ export default function HistoricalPage() {
   }
 
   // Sort dates chronologically (most recent last)
-  // Use the same comparison function as in parse-sheet-data.ts
+  // Use the same comparison function as in parse-sheet-data.ts (with year rollover handling)
   const compareDates = (date1: string, date2: string): number => {
     const [month1, day1] = date1.split('/').map(Number);
     const [month2, day2] = date2.split('/').map(Number);
+    
+    // Handle year rollover: if one date is in Dec (12) and other is in Jan-Mar (1-3),
+    // assume the Jan-Mar date is in the next year (newer)
+    if (month1 >= 12 && month2 <= 3) {
+      // date1 is Dec, date2 is Jan-Mar -> date2 is newer (next year)
+      return -1;
+    }
+    if (month1 <= 3 && month2 >= 12) {
+      // date1 is Jan-Mar, date2 is Dec -> date1 is newer (next year)
+      return 1;
+    }
+    
+    // Normal comparison within same year
     if (month1 !== month2) {
       return month1 - month2;
     }
